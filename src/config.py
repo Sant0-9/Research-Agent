@@ -94,4 +94,4 @@ def get_settings() -> Settings:
     Uses lru_cache to ensure settings are only loaded once.
     This will raise a validation error if required environment variables are missing.
     """
-    return Settings()
+    return Settings()  # type: ignore[call-arg]  # Pydantic loads from env

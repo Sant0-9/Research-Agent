@@ -5,6 +5,7 @@ Handles research queries and generates publication-ready LaTeX papers.
 """
 
 import time
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 from uuid import uuid4
@@ -14,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.config import Settings, get_settings
+from src.config import get_settings
 from src.utils.errors import RateLimitError, ResearchAgentError
 from src.utils.logging import bind_context, clear_context, get_logger, setup_logging
 
@@ -28,7 +29,7 @@ __version__ = "0.1.0"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager.
 
     Handles startup and shutdown events.
@@ -102,7 +103,10 @@ def create_app() -> FastAPI:
 _rate_limit_store: dict[str, list[float]] = {}
 
 
-async def request_middleware(request: Request, call_next) -> Response:
+async def request_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """Request middleware for logging, rate limiting, and context."""
     settings = get_settings()
     logger = get_logger()
@@ -174,7 +178,7 @@ async def request_middleware(request: Request, call_next) -> Response:
 
 
 async def research_agent_error_handler(
-    request: Request,
+    _request: Request,
     exc: ResearchAgentError,
 ) -> JSONResponse:
     """Handle ResearchAgentError exceptions."""
@@ -191,7 +195,7 @@ async def research_agent_error_handler(
     )
 
 
-async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
+async def generic_error_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     logger = get_logger()
     logger.exception("Unexpected error", error=str(exc))

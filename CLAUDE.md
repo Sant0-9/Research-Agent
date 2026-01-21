@@ -559,6 +559,26 @@ research-agent/
   - Test suite with pytest fixtures (conftest.py, test_*.py)
   - All dependencies pinned in pyproject.toml
 
+- **Phase 2 Research Complete**: vLLM and DeepSeek-R1 Best Practices
+  - vLLM 0.13.0 exposes OpenAI-compatible API at `/v1` endpoint
+  - Use official OpenAI Python client with `base_url` set to vLLM server
+  - vLLM-specific params via `extra_body` (e.g., `top_k`)
+  - Streaming supported via standard OpenAI client pattern
+  - AsyncOpenAI for async operations, aiohttp backend optional
+  - DeepSeek-R1 settings: temperature 0.5-0.7 (0.6 optimal), top_p 0.95
+  - NO system prompts for R1-Distill - put all instructions in user message
+  - NO few-shot prompting - degrades performance, trust zero-shot
+  - Math problems: add "Please reason step by step, put final answer in \\boxed{}"
+  - Model uses `<think>` tags for reasoning output
+  - Force thinking with `<think>\n` if model skips reasoning
+  - Sources: vLLM docs, DeepSeek GitHub, Together.ai docs
+
+- **Phase 1 Code Quality Review**
+  - Fixed ruff linting issues (unused imports, argument naming)
+  - Fixed mypy type annotations (lifespan, middleware, logger)
+  - Added per-file-ignores for intentional patterns (S104 for Docker binding)
+  - All linting and type checks now pass
+
 - **UI Stack Decision**: Next.js 15 + Aceternity UI + Motion (Framer Motion)
   - Design philosophy: Intentionally minimal, premium typography, fast responsive
   - Animations: Subtle micro-interactions only, no flashy effects

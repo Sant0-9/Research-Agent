@@ -84,7 +84,7 @@ def setup_logging(
     )
 
 
-def get_logger(name: str | None = None, **initial_context: Any) -> structlog.BoundLogger:
+def get_logger(name: str | None = None, **initial_context: Any) -> Any:
     """Get a structured logger instance.
 
     Args:

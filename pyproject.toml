@@ -113,6 +113,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = ["S101", "ARG"]
+"src/config.py" = ["S104"]  # 0.0.0.0 binding intentional for Docker
 
 [tool.mypy]
 python_version = "3.12"
