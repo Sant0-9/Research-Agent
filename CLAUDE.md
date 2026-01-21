@@ -209,7 +209,7 @@
 
 ## PROGRESS TRACKER
 
-### Current Status: BUILDPLAN PHASE 2 READY - Brain Service
+### Current Status: BUILDPLAN PHASE 3 READY - Worker Services
 
 ### Completed Tasks
 - [x] Research HPC/cloud model hosting options (Brev, Vast.ai)
@@ -222,11 +222,12 @@
 - [x] Final model selection: DeepSeek-R1-Distill-Qwen-14B
 - [x] Create project rules (this file)
 - [x] **BUILDPLAN Phase 1: Foundation & Infrastructure** (2026-01-21)
+- [x] **BUILDPLAN Phase 2: Brain Service** (2026-01-21)
 
 ### Pending Phases (per BUILDPLAN.md)
 
 - [x] Phase 1: Foundation & Infrastructure
-- [ ] Phase 2: Brain Service
+- [x] Phase 2: Brain Service
 - [ ] Phase 3: Worker Services
 - [ ] Phase 4: Orchestration Pipeline
 - [ ] Phase 5: LaTeX Output
@@ -537,8 +538,11 @@ research-agent/
 - `BUILDPLAN.md`: Implementation phases and deliverables
 - `src/main.py`: FastAPI application (health endpoints working)
 - `src/config.py`: Configuration with Pydantic settings
+- `src/brain/client.py`: BrainClient for vLLM integration
+- `src/brain/prompts.py`: Prompt templates for research tasks
 - `src/utils/errors.py`: Custom exception hierarchy
 - `src/utils/logging.py`: Structured logging with structlog
+- `services/brain/`: vLLM Dockerfile and startup script
 - `infra/postgres/init.sql`: Database schema
 - `scripts/`: setup.sh, run_local.sh, test.sh
 
@@ -547,6 +551,17 @@ research-agent/
 ## NOTES & DECISIONS LOG
 
 ### 2026-01-21
+
+- **BUILDPLAN Phase 2 Complete**: Brain Service
+  - BrainClient class with async vLLM integration (src/brain/client.py - 320 lines)
+  - Uses OpenAI Python SDK with vLLM's OpenAI-compatible API
+  - Streaming support, retry logic with exponential backoff
+  - Extracts reasoning from `<think>` tags automatically
+  - 12 prompt templates for research tasks (src/brain/prompts.py - 340 lines)
+  - NO system prompts (R1-Distill requirement)
+  - vLLM Dockerfile with DeepSeek-R1-Distill-14B (services/brain/)
+  - Comprehensive test suite with 26 tests (tests/test_brain.py)
+  - All 64 tests passing, linting and type checks clean
 
 - **BUILDPLAN Phase 1 Complete**: Foundation & Infrastructure
   - FastAPI application with health endpoints (main.py - 297 lines)

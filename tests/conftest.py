@@ -3,7 +3,6 @@
 import os
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,11 +43,10 @@ def test_settings() -> Generator[Any, None, None]:
 
 @pytest.fixture(scope="module")
 def app() -> Generator[Any, None, None]:
-    """Create a FastAPI application for testing."""
-    from src.main import create_app
+    """Get the FastAPI application for testing."""
+    from src.main import app as fastapi_app
 
-    test_app = create_app()
-    yield test_app
+    yield fastapi_app
 
 
 @pytest.fixture(scope="module")

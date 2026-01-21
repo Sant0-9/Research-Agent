@@ -1,6 +1,5 @@
 """Tests for custom error classes."""
 
-import pytest
 
 from src.utils.errors import (
     ArxivError,
@@ -9,7 +8,6 @@ from src.utils.errors import (
     BrainServiceError,
     BrainTimeoutError,
     CitationError,
-    ConfigurationError,
     InvalidDomainError,
     LaTeXError,
     MaxIterationsError,

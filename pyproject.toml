@@ -112,7 +112,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["S101", "ARG"]
+"tests/**/*" = ["S101", "ARG", "S104"]  # S104: 0.0.0.0 in test assertions
 "src/config.py" = ["S104"]  # 0.0.0.0 binding intentional for Docker
 
 [tool.mypy]
