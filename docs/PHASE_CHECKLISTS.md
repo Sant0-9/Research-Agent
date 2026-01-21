@@ -4,7 +4,7 @@ Reference for deferred phases and future work.
 
 ---
 
-## Phase 6: Security Hardening & Polish (IN PROGRESS)
+## Phase 6: Security Hardening & Polish (DONE)
 
 ### 6.1 Error Handling
 - [x] Graceful degradation on API failures
