@@ -149,6 +149,46 @@
 
 **This is NON-NEGOTIABLE** - the user relies on this file for context recovery.
 
+### 12. Debugging & Troubleshooting Rules (MANDATORY)
+
+When encountering errors, especially version/compatibility issues:
+
+**NEVER guess at fixes. ALWAYS research first.**
+
+1. **Search for the EXACT error message** - Copy the full error and search online
+2. **Check version compatibility**:
+   - Look at pyproject.toml for pinned versions
+   - Check PyPI/GitHub for library version requirements
+   - Verify transitive dependencies (e.g., FastAPI requires specific Starlette versions)
+3. **Understand breaking changes**:
+   - Read release notes/changelogs for libraries involved
+   - Check GitHub issues for similar problems
+   - Look for migration guides between versions
+4. **Linux-specific commands**:
+   - Use `pip3` not `pip` on Linux
+   - Use `python3` not `python`
+   - Check if virtual environment is activated
+5. **Before attempting a fix**:
+   - Understand WHY the error occurs, not just HOW to suppress it
+   - Document the root cause
+   - Verify the fix addresses the root cause, not just symptoms
+6. **Common debugging steps**:
+   - `pip3 install -e .` to reinstall from pyproject.toml with correct versions
+   - `pip3 list | grep <package>` to check installed versions
+   - `pip3 show <package>` to see dependencies
+   - Check if multiple versions are conflicting
+7. **DO NOT**:
+   - Try random fixes hoping something works
+   - Downgrade packages without understanding why
+   - Ignore version constraints in pyproject.toml
+   - Assume the error message is misleading
+
+**Example (Starlette/FastAPI middleware error)**:
+
+- Error: "ValueError: too many values to unpack (expected 2)"
+- WRONG: Try different middleware patterns randomly
+- RIGHT: Research shows Starlette 0.35.0 changed middleware tuple from 2 to 3 values, FastAPI version determines required Starlette version, fix by installing correct versions from pyproject.toml
+
 ---
 
 ## ARCHITECTURE OVERVIEW
@@ -209,7 +249,7 @@
 
 ## PROGRESS TRACKER
 
-### Current Status: BUILDPLAN PHASE 4 READY - Orchestration Pipeline
+### Current Status: BUILDPLAN PHASE 5 READY - LaTeX Output
 
 ### Completed Tasks
 - [x] Research HPC/cloud model hosting options (Brev, Vast.ai)
@@ -224,13 +264,14 @@
 - [x] **BUILDPLAN Phase 1: Foundation & Infrastructure** (2026-01-21)
 - [x] **BUILDPLAN Phase 2: Brain Service** (2026-01-21)
 - [x] **BUILDPLAN Phase 3: Worker Services** (2026-01-21)
+- [x] **BUILDPLAN Phase 4: Orchestration Pipeline** (2026-01-21)
 
 ### Pending Phases (per BUILDPLAN.md)
 
 - [x] Phase 1: Foundation & Infrastructure
 - [x] Phase 2: Brain Service
 - [x] Phase 3: Worker Services
-- [ ] Phase 4: Orchestration Pipeline
+- [x] Phase 4: Orchestration Pipeline
 - [ ] Phase 5: LaTeX Output
 - [ ] Phase 6: Security Hardening & Polish
 
@@ -544,7 +585,7 @@ research-agent/
 ### Key Files to Check
 
 - `BUILDPLAN.md`: Implementation phases and deliverables
-- `src/main.py`: FastAPI application (health endpoints working)
+- `src/main.py`: FastAPI application with research endpoints
 - `src/config.py`: Configuration with Pydantic settings
 - `src/brain/client.py`: BrainClient for vLLM integration
 - `src/brain/prompts.py`: Prompt templates for research tasks
@@ -552,6 +593,10 @@ research-agent/
 - `src/workers/search.py`: SearchWorker with Tavily API
 - `src/workers/arxiv.py`: ArxivWorker with ArXiv API
 - `src/workers/writer.py`: WriterWorker with GPT-4o-mini
+- `src/pipeline/state.py`: ResearchState TypedDict and enums
+- `src/pipeline/nodes.py`: Node functions for workflow steps
+- `src/pipeline/graph.py`: StateGraph construction and routing
+- `src/pipeline/workflow.py`: ResearchWorkflow execution interface
 - `src/utils/errors.py`: Custom exception hierarchy
 - `src/utils/logging.py`: Structured logging with structlog
 - `services/brain/`: vLLM Dockerfile and startup script
@@ -563,6 +608,21 @@ research-agent/
 ## NOTES & DECISIONS LOG
 
 ### 2026-01-21
+
+- **BUILDPLAN Phase 4 Complete**: Orchestration Pipeline
+  - Full LangGraph workflow implementation (src/pipeline/)
+  - ResearchState TypedDict with Annotated reducers for list fields (src/pipeline/state.py - 280 lines)
+  - 7 node functions: plan, search, analyze, generate_queries, synthesize, write, review (src/pipeline/nodes.py - 770 lines)
+  - StateGraph with conditional edges for dynamic routing (src/pipeline/graph.py - 280 lines)
+  - Workflow execution interface with streaming, checkpointing, resume support (src/pipeline/workflow.py - 500 lines)
+  - AsyncPostgresSaver integration for PostgreSQL checkpointing (langgraph-checkpoint-postgres 3.0.3)
+  - Research API endpoints: POST /research, POST /research/stream (SSE), GET /research/graph
+  - LangGraph 1.0.6 with proper state management patterns
+  - Conditional routing: analyze -> generate_queries or synthesize based on knowledge gaps
+  - 39 comprehensive tests for pipeline (tests/test_pipeline.py - 720 lines)
+  - All 130 tests passing, linting and type checks clean
+  - Fixed FastAPI middleware compatibility by converting to class-based middleware (RequestMiddleware)
+  - Dependencies: langgraph==1.0.6, langgraph-checkpoint-postgres==3.0.3, psycopg[binary,pool]==3.2.4
 
 - **BUILDPLAN Phase 3 Complete**: Worker Services
   - BaseWorker abstract class with retry logic (exponential backoff), error handling, cost tracking (src/workers/base.py - 216 lines)

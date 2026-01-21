@@ -27,6 +27,7 @@ dependencies = [
     "fastapi==0.115.6",
     "uvicorn[standard]==0.34.0",
     "python-multipart==0.0.20",
+    "sse-starlette==2.2.1",
 
     # Data validation and settings
     "pydantic==2.10.4",
@@ -37,6 +38,8 @@ dependencies = [
 
     # Agent orchestration
     "langgraph==1.0.6",
+    "langgraph-checkpoint-postgres==3.0.3",
+    "psycopg[binary,pool]==3.2.4",
 
     # LLM APIs
     "openai==1.62.0",
@@ -131,7 +134,7 @@ show_error_codes = true
 exclude = ["tests/"]
 
 [[tool.mypy.overrides]]
-module = ["tavily.*", "arxiv.*"]
+module = ["tavily.*", "arxiv.*", "langgraph.*", "sse_starlette.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
