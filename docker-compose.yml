@@ -1,0 +1,170 @@
+# Research Agent Docker Compose
+# Production-ready configuration with security hardening
+
+services:
+  # ==========================================================================
+  # Redis - Task queue and caching
+  # ==========================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: research-agent-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-changeme}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - research-net
+    # Security: run as non-root
+    user: "999:999"
+
+  # ==========================================================================
+  # PostgreSQL - Metadata and logs storage
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: research-agent-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-research}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-research_agent}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-research} -d ${POSTGRES_DB:-research_agent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - research-net
+    # Security: run as postgres user (default)
+
+  # ==========================================================================
+  # API Service - Main FastAPI application
+  # ==========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: research-agent-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_JSON=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - BRAIN_SERVICE_URL=${BRAIN_SERVICE_URL:-http://brain:8001}
+      - BRAIN_API_KEY=${BRAIN_API_KEY}
+      - OUTPUT_DIR=/app/outputs
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-research}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-research_agent}
+    volumes:
+      - ./outputs:/app/outputs:rw
+      - ./storage:/app/storage:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Security: run as non-root user
+    user: "1000:1000"
+    # Security: read-only filesystem where possible
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+    # Security: drop all capabilities
+    cap_drop:
+      - ALL
+    # Security: no new privileges
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - research-net
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      brain:
+        condition: service_healthy
+        required: false
+
+  # ==========================================================================
+  # Brain Service - Self-hosted vLLM with DeepSeek-R1-Distill-Qwen-14B
+  # Note: Requires GPU. For cloud deployment, use BRAIN_SERVICE_URL to point
+  # to external Brev.dev instance instead.
+  # ==========================================================================
+  brain:
+    image: vllm/vllm-openai:v0.13.0
+    container_name: research-agent-brain
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - VLLM_API_KEY=${BRAIN_API_KEY}
+    command: >
+      --model ${BRAIN_MODEL_NAME:-deepseek-ai/DeepSeek-R1-Distill-Qwen-14B}
+      --port 8001
+      --max-model-len 32768
+      --gpu-memory-utilization 0.9
+      --dtype auto
+      --trust-remote-code
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - research-net
+    # Only start this service if you have a local GPU
+    # For cloud GPU (Brev.dev), comment out this service and set BRAIN_SERVICE_URL
+    profiles:
+      - gpu
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  huggingface-cache:
+    driver: local
+
+networks:
+  research-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

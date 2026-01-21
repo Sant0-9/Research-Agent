@@ -1,0 +1,96 @@
+# Research Agent Docker Compose - Development
+# Use: docker compose -f docker-compose.dev.yml up
+
+services:
+  # ==========================================================================
+  # Redis - Task queue and caching
+  # ==========================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: research-agent-redis-dev
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - research-net-dev
+
+  # ==========================================================================
+  # PostgreSQL - Metadata and logs storage
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: research-agent-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-research}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-research_agent}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-research}"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - research-net-dev
+
+  # ==========================================================================
+  # API Service - Development mode with hot reload
+  # ==========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: research-agent-api-dev
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - LOG_JSON=false
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - BRAIN_SERVICE_URL=${BRAIN_SERVICE_URL}
+      - BRAIN_API_KEY=${BRAIN_API_KEY}
+      - OUTPUT_DIR=/app/outputs
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-research}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-research_agent}
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src:ro
+      - ./outputs:/app/outputs:rw
+      - ./storage:/app/storage:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - research-net-dev
+
+volumes:
+  redis-data-dev:
+    driver: local
+  postgres-data-dev:
+    driver: local
+
+networks:
+  research-net-dev:
+    driver: bridge

@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model weights and checkpoints
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.gguf
+checkpoints/
+models/
+weights/
+
+# Training artifacts
+runs/
+logs/
+wandb/
+mlruns/
+tensorboard/
+
+# Data (too large for git)
+data/
+datasets/
+*.parquet
+*.arrow
+
+# Secrets and credentials
+.env
+.env.*
+*.key
+secrets/
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Cache
+.cache/
+*.cache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Testing and coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Generated outputs (papers)
+outputs/*.tex
+outputs/*.pdf
+outputs/*.bib
+outputs/*.md
+outputs/*.log
+outputs/*.aux
+
+# Keep .env.example but ignore local variants
+!.env.example
+.env.local
+
+# Docker
+.docker/
